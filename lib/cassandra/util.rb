@@ -263,6 +263,12 @@ module Cassandra
       end
     end
 
+    def assert_nil_or_numeric_greater_zero(value, name = 'unknown')
+      return true if value.nil?
+      Util.assert_instance_of(::Numeric, timeout) { ":#{name} must be a number of seconds, #{value} given" }
+      Util.assert(timeout > 0) { ":#{name} must be greater than 0, #{value} given" }
+    end
+
     # @private
     LOWERCASE_REGEXP = /[[:lower:]\_]*/
     # @private

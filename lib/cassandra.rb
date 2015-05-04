@@ -50,6 +50,18 @@ module Cassandra
   # @see https://github.com/apache/cassandra/blob/trunk/doc/native_protocol_v1.spec#L591-L603 Description of possible types of writes in Apache Cassandra native protocol spec v1
   WRITE_TYPES = [:simple, :batch, :unlogged_batch, :counter, :batch_log].freeze
 
+  # A whitelist for Cassandra::Cluster option keys
+  VALID_OPTION_KEYS = [
+    :credentials, :auth_provider, :compression, :hosts, :logger, :port,
+    :load_balancing_policy, :reconnection_policy, :retry_policy, :listeners,
+    :consistency, :trace, :page_size, :compressor, :username, :password,
+    :ssl, :server_cert, :client_cert, :private_key, :passphrase,
+    :connect_timeout, :futures_factory, :datacenter, :address_resolution,
+    :address_resolution_policy, :idle_timeout, :heartbeat_interval, :timeout,
+    :synchronize_schema, :schema_refresh_delay, :schema_refresh_timeout,
+    :shuffle_replicas
+  ]
+
   # Creates a {Cassandra::Cluster Cluster instance}.
   #
   # @option options [Array<String, IPAddr>] :hosts (['127.0.0.1']) a list of
@@ -209,17 +221,7 @@ module Cassandra
   # @return [Cassandra::Future<Cassandra::Cluster>] a future resolving to the
   #   cluster instance.
   def self.cluster_async(options = {})
-    options = options.select do |key, value|
-      [ :credentials, :auth_provider, :compression, :hosts, :logger, :port,
-        :load_balancing_policy, :reconnection_policy, :retry_policy, :listeners,
-        :consistency, :trace, :page_size, :compressor, :username, :password,
-        :ssl, :server_cert, :client_cert, :private_key, :passphrase,
-        :connect_timeout, :futures_factory, :datacenter, :address_resolution,
-        :address_resolution_policy, :idle_timeout, :heartbeat_interval, :timeout,
-        :synchronize_schema, :schema_refresh_delay, :schema_refresh_timeout,
-        :shuffle_replicas
-      ].include?(key)
-    end
+    options = Hash[options.map{ |k, v| [k.to_sym, v] }].select { |k, _| VALID_OPTION_KEYS.include?(key) }
 
     has_username = options.has_key?(:username)
     has_password = options.has_key?(:password)
@@ -349,54 +351,10 @@ module Cassandra
       options[:datacenter] = String(options[:datacenter])
     end
 
-    if options.has_key?(:connect_timeout)
-      timeout = options[:connect_timeout]
-
-      unless timeout.nil?
-        Util.assert_instance_of(::Numeric, timeout) { ":connect_timeout must be a number of seconds, #{timeout} given" }
-        Util.assert(timeout > 0) { ":connect_timeout must be greater than 0, #{timeout} given" }
-      end
-    end
-
-    if options.has_key?(:timeout)
-      timeout = options[:timeout]
-
-      unless timeout.nil?
-        Util.assert_instance_of(::Numeric, timeout) { ":timeout must be a number of seconds, #{timeout} given" }
-        Util.assert(timeout > 0) { ":timeout must be greater than 0, #{timeout} given" }
-      end
-    end
-
-    if options.has_key?(:heartbeat_interval)
-      timeout = options[:heartbeat_interval]
-
-      unless timeout.nil?
-        Util.assert_instance_of(::Numeric, timeout) { ":heartbeat_interval must be a number of seconds, #{timeout} given" }
-        Util.assert(timeout > 0) { ":heartbeat_interval must be greater than 0, #{timeout} given" }
-      end
-    end
-
-    if options.has_key?(:idle_timeout)
-      timeout = options[:idle_timeout]
-
-      unless timeout.nil?
-        Util.assert_instance_of(::Numeric, timeout) { ":idle_timeout must be a number of seconds, #{timeout} given" }
-        Util.assert(timeout > 0) { ":idle_timeout must be greater than 0, #{timeout} given" }
-      end
-    end
-
-    if options.has_key?(:schema_refresh_delay)
-      timeout = options[:schema_refresh_delay]
-
-      Util.assert_instance_of(::Numeric, timeout) { ":schema_refresh_delay must be a number of seconds, #{timeout} given" }
-      Util.assert(timeout > 0) { ":schema_refresh_delay must be greater than 0, #{timeout} given" }
-    end
-
-    if options.has_key?(:schema_refresh_timeout)
-      timeout = options[:schema_refresh_timeout]
-
-      Util.assert_instance_of(::Numeric, timeout) { ":schema_refresh_timeout must be a number of seconds, #{timeout} given" }
-      Util.assert(timeout > 0) { ":schema_refresh_timeout must be greater than 0, #{timeout} given" }
+    [ :connect_timeout, :timeout, :heartbeat_interval, :idle_timeout,
+      :schema_refresh_delay, :schema_refresh_timeout
+    ].each do |key|
+      Util.assert_nil_or_numeric_greater_zero(options[key], key)
     end
 
     if options.has_key?(:load_balancing_policy)
