@@ -15,12 +15,19 @@ module Cassandra
 
     attr_accessor :options
 
-    def initialize(options={})
-      @options = options
+    def self.for_driver(options={})
+      OptionsParser.new(options)
     end
 
+    def initialize(options={})
+      @options = options
+      for_driver!
+    end
+
+    private
+
     # @return [Array<Hash, Array<Cassandra::Host>>]
-    def for_driver
+    def for_driver!
       # symbolize the keys and filter according to the attribute whitelist
       options = Hash[@options.map{ |k, v| [k.to_sym, v] }].select { |k, _| VALID_OPTION_KEYS.include?(k) }
 
@@ -61,8 +68,6 @@ module Cassandra
 
       [options, gather_hosts]
     end
-
-    private
 
     def parse_username_password
       username = options.delete(:username)

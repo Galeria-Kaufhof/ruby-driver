@@ -210,7 +210,7 @@ module Cassandra
   #   cluster instance.
   def self.cluster_async(options = {})
     begin
-      options, hosts = OptionsParser.new(options).for_driver
+      options, hosts = OptionsParser.for_driver(options)
       Driver.new(options).connect(hosts)
     rescue => e
       futures = options.fetch(:futures_factory) { Driver.new.futures_factory }
