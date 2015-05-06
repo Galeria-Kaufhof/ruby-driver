@@ -221,7 +221,7 @@ module Cassandra
   # @return [Cassandra::Future<Cassandra::Cluster>] a future resolving to the
   #   cluster instance.
   def self.cluster_async(options = {})
-    options = Hash[options.map{ |k, v| [k.to_sym, v] }].select { |k, _| VALID_OPTION_KEYS.include?(key) }
+    options = Hash[options.map{ |k, v| [k.to_sym, v] }].select { |k, _| VALID_OPTION_KEYS.include?(k) }
 
     has_username = options.has_key?(:username)
     has_password = options.has_key?(:password)
@@ -458,8 +458,7 @@ module Cassandra
     futures = options.fetch(:futures_factory) { Driver.new.futures_factory }
     futures.error(e)
   else
-    driver = Driver.new(options)
-    driver.connect(hosts)
+    Driver.new(options).connect(hosts)
   end
 
   # @private
